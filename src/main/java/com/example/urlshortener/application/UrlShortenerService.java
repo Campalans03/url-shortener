@@ -4,6 +4,9 @@ import com.example.urlshortener.domain.ShortCodeGenerator;
 import com.example.urlshortener.domain.ShortUrl;
 import com.example.urlshortener.domain.ShortUrlRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 public class UrlShortenerService {
@@ -21,6 +24,15 @@ public class UrlShortenerService {
     public String shortenUrl(String longUrl) {
         ShortUrl saved = shortUrlRepository.save(ShortUrl.create(longUrl, generateUniqueCode()));
         return saved.shortCode();
+    }
+
+    @Transactional
+    public Optional<String> resolve(String shortCode) {
+        return shortUrlRepository.findByShortCode(shortCode)
+                .map(shortUrl -> {
+                    shortUrlRepository.save(shortUrl.withIncrementedClicks());
+                    return shortUrl.longUrl();
+                });
     }
 
     private String generateUniqueCode() {
