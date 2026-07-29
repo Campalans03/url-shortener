@@ -45,21 +45,37 @@ The app starts on `http://localhost:8080`. The H2 console is available at `/h2-c
 
 ### `POST /shorten`
 
-Creates a short code for a URL. The long URL is passed as a request parameter.
+Creates a short code for a URL.
 
 ```bash
-curl -X POST "http://localhost:8080/shorten" -d "longUrl=https://example.com/some/very/long/path"
+curl -X POST "http://localhost:8080/shorten" \
+  -H "Content-Type: application/json" \
+  -d '{"longUrl": "https://example.com/some/very/long/path"}'
 ```
 
-Response is the generated short code as plain text:
+Responds `201 Created` with a `Location` header pointing at the short URL and a JSON body:
 
+```json
+{
+  "id": "0f0a4b1e-...",
+  "longUrl": "https://example.com/some/very/long/path",
+  "shortCode": "aB3xY9z"
+}
 ```
-aB3xY9z
+
+The URL is stripped of surrounding whitespace and must be an absolute `http`/`https` URL with a
+host, at most 2048 characters. Anything else is rejected with `400 Bad Request` and a
+`ProblemDetail` body, so a stored URL is always safe to use as a redirect target.
+
+### `GET /{shortCode}`
+
+Responds `302 Found` with the original URL in the `Location` header, or `404 Not Found` if the
+code is unknown. Each resolution increments `clickCount`.
+
+```bash
+curl -i "http://localhost:8080/aB3xY9z"
 ```
 
 ## Roadmap
 
-- `GET /{shortCode}` redirect endpoint (the `findByShortCode` port and the `clickCount` field are already in place)
-- Return a JSON payload via `ShortenUrlDTO` instead of a bare string
-- Bean validation on the incoming URL
 - Persistent database instead of in-memory H2

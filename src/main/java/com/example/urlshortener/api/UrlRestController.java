@@ -1,12 +1,18 @@
 package com.example.urlshortener.api;
 
+import com.example.urlshortener.application.DTO.ShortenUrlDTO;
+import com.example.urlshortener.application.DTO.ShortenUrlRequest;
 import com.example.urlshortener.application.UrlShortenerService;
+import com.example.urlshortener.domain.ShortUrl;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 
@@ -19,15 +25,16 @@ public class UrlRestController {
     }
 
     @PostMapping("/shorten")
-    public String shortenUrl(String longUrl) {
-        return urlShortenerService.shortenUrl(longUrl);
+    public ResponseEntity<ShortenUrlDTO> shortenUrl(@Valid @RequestBody ShortenUrlRequest request) {
+        ShortUrl shortUrl = urlShortenerService.shortenUrl(request.longUrl());
+        URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/{shortCode}")
+                .buildAndExpand(shortUrl.shortCode())
+                .toUri();
+        return ResponseEntity.created(location).body(new ShortenUrlDTO(shortUrl));
     }
 
-    /**
-     * The path is restricted to the shape of a generated code so this mapping does not
-     * swallow other routes such as {@code /shorten} or {@code /h2-console}.
-     */
-    @GetMapping("/{shortCode:[A-Za-z0-9]{7}}")
+    @GetMapping("/{shortCode}")
     public ResponseEntity<Void> redirect(@PathVariable String shortCode) {
         return urlShortenerService.resolve(shortCode)
                 .map(longUrl -> ResponseEntity.status(HttpStatus.FOUND)

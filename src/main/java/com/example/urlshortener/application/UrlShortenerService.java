@@ -21,9 +21,8 @@ public class UrlShortenerService {
         this.shortCodeGenerator = shortCodeGenerator;
     }
 
-    public String shortenUrl(String longUrl) {
-        ShortUrl saved = shortUrlRepository.save(ShortUrl.create(longUrl, generateUniqueCode()));
-        return saved.shortCode();
+    public ShortUrl shortenUrl(String longUrl) {
+        return shortUrlRepository.save(ShortUrl.create(longUrl, generateUniqueCode()));
     }
 
     @Transactional
